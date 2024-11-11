@@ -1,0 +1,23 @@
+{
+  "name": "xstate-w-signals",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@heymp/signals": "^0.1.1",
+    "@patternfly/pfe-core": "^4.0.4",
+    "@rhds/elements": "^2.1.1",
+    "lit": "^3.2.1",
+    "tslib": "^2.8.1",
+    "xstate": "^5.18.2"
+  },
+  "devDependencies": {
+    "typescript": "~5.6.2",
+    "vite": "^5.4.10"
+  }
+}
