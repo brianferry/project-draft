@@ -10,22 +10,6 @@ const itemMachineSchema = {
             item: Item;
         },
     },
-    actions: {
-        increment: (context) => {
-            const item = context.context.item;
-            item.value = {
-                ...item.value,
-                quantity: item.value.quantity + 1
-            };
-        },
-        decrement: (context) => {
-            const item = context.context.item;
-            item.value = {
-                ...item.value,
-                quantity: item.value.quantity - 1
-            };
-        }    
-    },
 };
 
 export const itemMachine = setup(itemMachineSchema).createMachine({
@@ -35,16 +19,7 @@ export const itemMachine = setup(itemMachineSchema).createMachine({
         item: input.item
     }),
     states: {
-        idle: {
-            on: {
-                INCREMENT: {
-                    actions: 'increment'
-                },
-                DECREMENT: {
-                    actions: 'decrement'
-                }
-            },
-        }
+        idle: {}
     }
 });
 
