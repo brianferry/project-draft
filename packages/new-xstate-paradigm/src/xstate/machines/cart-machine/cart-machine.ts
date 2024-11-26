@@ -10,7 +10,7 @@ export const cartMachineSchema = {
     },
     actions: {
         addItem: ({ context, event }: any) => {
-            context.items.value.push({...event.item, uuid: Math.random().toString(36).substring(7)});
+            context.items.value.push(new Signal.State({...event.item, uuid: Math.random().toString(36).substring(7)}));
         },
         removeItem: ({ context, event }: any) => {
             context.items.value = context.items.value.filter((item: Item) => item.uuid !== event.uuid);

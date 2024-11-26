@@ -1,6 +1,6 @@
-import { Item } from "../../lib/types/item/item";
+import { checkoutMachineContextSchema } from "../machines/checkout-machine/checkout-machine";
 
-export const geoLocation = (items: Item[]): Promise<Array<Item>> => new Promise(async (resolve) => {
+export const geoLocation = (items: checkoutMachineContextSchema[]): Promise<Array<checkoutMachineContextSchema>> => new Promise(async (resolve) => {
     await Promise.all(items.map(async (item) => {
         const valid = await geoLocationIdCheck(item.id);
         Object.assign(item, { valid });

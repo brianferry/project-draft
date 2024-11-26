@@ -1,20 +1,25 @@
-import { Item } from "../../../lib/types/item/item.js";
 import { assign, createActor, fromPromise, setup } from "xstate";
 import { geoLocation } from "../../services/geolocation-service.js";
 
-const geoLocationServiceFromPromise = fromPromise(async ({ input }: { input: { items: Array<Item> } }) => await geoLocation(input.items));
+const geoLocationServiceFromPromise = fromPromise(async ({ input }: { input: { items: Array<checkoutMachineItemSchema> } }) => await geoLocation(input.items));
 
-export interface ItemWithValidity extends Item {
-    valid?: boolean;
+export class checkoutMachineItemSchema {
+    public uuid: string;
+    public valid?: boolean;
+
+    constructor(uuid: string) {
+        this.uuid = uuid;
+        this.valid = false;
+    }
 }
 
 export const checkoutMachineSchema = {
     types: {
         context: {} as {
-            items: Array<ItemWithValidity>,
+            items: Array<checkoutMachineItemSchema>,
         },
         input: {} as {
-            items: Array<Item>,
+            items: Array<string>,
         },
     },
     actions: {
@@ -22,7 +27,7 @@ export const checkoutMachineSchema = {
             context.items = event.items;
         },
         updateItems: ({ context, event }: any) => {
-            Object.assign(context.items, event.items);
+            Object.assign(context.items, event.items.map((item: string) => new checkoutMachineItemSchema(item)));
         },
     },
     actors: {
@@ -40,16 +45,11 @@ export const checkoutMachine = setup(checkoutMachineSchema).createMachine({
     id: 'checkoutMachine',
     initial: 'idle',
     context: ({ input }) => ({
-        items: input && input.items || [],
+        items: input && input.items.map(item => new checkoutMachineItemSchema(item)) || [],
     }),
     on: {
-        LOG_CONTEXT: {
-            actions: ({ context }) => console.log(context)
-        },
         UPDATE_ITEMS: {
-            actions: assign({
-                items: ({ event }) => event.items
-            }),
+            actions: 'updateItems',
             target: '.idle',
         }
     },
@@ -92,4 +92,4 @@ export const checkoutMachine = setup(checkoutMachineSchema).createMachine({
     },
 });
 
-export const createCheckoutMachine = (input: { items: Array<Item> }) => createActor(checkoutMachine, { input });
+export const createCheckoutMachine = (input: { items: Array<string> }) => createActor(checkoutMachine, { input });

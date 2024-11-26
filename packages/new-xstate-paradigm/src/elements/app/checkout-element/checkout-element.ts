@@ -1,7 +1,7 @@
 import { customElement, property } from "lit/decorators.js";
 import { css, html, LitElement, PropertyValues } from "lit";
-import { checkoutMachine, createCheckoutMachine, ItemWithValidity } from "../../../xstate/machines/checkout-machine/checkout-machine";
-import { Item } from "../../../lib/types/item/item";
+import { checkoutMachine, checkoutMachineContextSchema, createCheckoutMachine, ItemWithValidity } from "../../../xstate/machines/checkout-machine/checkout-machine";
+import { Item, ItemSignal } from "../../../lib/types/item/item";
 
 import { Actor } from "xstate";
 import { cartMachine } from "../../../xstate/machines/cart-machine/cart-machine";
@@ -19,7 +19,7 @@ export class CheckoutElement extends LitElement {
     cartmachine?: Actor<typeof cartMachine>;
 
     @property({ attribute: 'items', reflect: true, type: Array })
-    items: Array<Item> = [];
+    items: Array<ItemSignal> = [];
 
     @observed
     @property({ type: Object, attribute: false, reflect: true })
@@ -35,23 +35,23 @@ export class CheckoutElement extends LitElement {
         super.updated(_changedProperties);
         if (_changedProperties.has('items')) {
             if (this.checkoutMachine) {
-                this.checkoutMachine.send({ type: 'UPDATE_ITEMS', items: this.items });
+                this.checkoutMachine.send({ type: 'UPDATE_ITEMS', items: this.items.map((item: ItemSignal) => item._value.uuid) });
             }
         };
     }
 
     checkIsValid(item: Item): boolean | undefined {
         const items = this.checkoutMachine?.getSnapshot()?.context.items;
-        const foundItem = items?.find((i: ItemWithValidity) => i.uuid === item.uuid);
-        return foundItem?.valid;
+        return items?.find((i: checkoutMachineContextSchema) => i.uuid === item.uuid)?.valid;
     }
 
     connectedCallback(): void {
         super.connectedCallback();
         if (!this.checkoutMachine) {
-            this.checkoutMachine = createCheckoutMachine({ items: this.items });
-            this.checkoutMachine.subscribe((state) => {
-                console.log('state', state);
+            console.log(this.items);
+            const itemIds = this.items.map((item: ItemSignal) => item._value.uuid);
+            this.checkoutMachine = createCheckoutMachine({ items: itemIds });
+            this.checkoutMachine.subscribe(() => {
                 this.requestUpdate();
             });
             this.checkoutMachine.start();
@@ -59,19 +59,19 @@ export class CheckoutElement extends LitElement {
     }
 
     render() {
-        const state = this.checkoutMachine?.getSnapshot();
-        if (state && state.context && state.context.items.length > 0) {
+        const cartMachineState = this.cartmachine?.getSnapshot();
+        if (cartMachineState && cartMachineState.context && cartMachineState.context.items.value.length > 0) {
             return html`
             <div>
                 <button type="button" @click=${() => this.checkoutMachine?.send({ type: 'LOG_CONTEXT' })} >LOG_CONTEXT</button>
                 <ol>
-                ${state.context.items.map((item: Item) => html`
+                ${cartMachineState.context.items.value.map((item: ItemSignal) => html`
                     <li>
-                        <span>${item.name}</span>
-                        <button type="button" @click=${() => this.cartmachine?.send({ type: 'REMOVE_ITEM', uuid: item.uuid })} >Remove ${item.name}</button>
-                        ${typeof this.checkIsValid(item) === 'undefined' ?
+                        <span>${item.value.name}</span>
+                        <button type="button" @click=${() => this.cartmachine?.send({ type: 'REMOVE_ITEM', uuid: item.value.uuid })} >Remove ${item.value.name}</button>
+                        ${typeof this.checkIsValid(item.value) === 'undefined' ?
                             html`<p>Checking validity...</p>` :
-                        this.checkIsValid(item) ? html`<p>Validated</p>` : html`<p>Invalid</p>`}
+                        this.checkIsValid(item.value) ? html`<p>Validated</p>` : html`<p>Invalid</p>`}
                     </li>
                 `)}
                 </ol>
