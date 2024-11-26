@@ -14,7 +14,7 @@
     "@rhds/elements": "^2.1.1",
     "lit": "^3.2.1",
     "tslib": "^2.8.1",
-    "xstate": "^5.18.2"
+    "xstate": "^5.19.0"
   },
   "devDependencies": {
     "typescript": "~5.6.2",
