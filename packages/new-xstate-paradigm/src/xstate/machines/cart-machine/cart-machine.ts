@@ -1,62 +1,44 @@
-import { Item } from "../../../lib/types/item/item.js";
-import { setup, fromPromise, assign } from "xstate";
-import { itemsService } from "../../services/items-service.js";
-
-const xStateItemsService = fromPromise(async () => await itemsService());
+import { Signal } from "@heymp/signals";
+import { Item, ItemSignal } from "../../../lib/types/item/item.js";
+import { setup } from "xstate";
 
 export const cartMachineSchema = {
     types: {
         context: {
-            items: new Array<Item>()
+            items: new Signal.State(Array<ItemSignal>()),
         },
     },
     actions: {
-        setItems: ({ context, event }: any) => {
-            context.items = event.output.map((item: Item) => item);
+        addItem: ({ context, event }: any) => {
+            context.items.value.push({...event.item, uuid: Math.random().toString(36).substring(7)});
         },
-        updateItem: ({ context, event }: any) => {           
-            const item = context.items.find((item: Item) => item.id === event.item.id);
-            if (item) {
-                Object.assign(item, {
-                    ...item,
-                    ...event.item,
-                });
-            }
+        removeItem: ({ context, event }: any) => {
+            context.items.value = context.items.value.filter((item: Item) => item.uuid !== event.uuid);
         },
-        logCurrentContext: (ctx: any) => {
-            console.log(ctx);
-        }
+        resetCart: ({ context }: any) => {
+            context.items.value = [];
+        },
     },
-    actors: {
-        itemsService: xStateItemsService
-    }
 };
 
 
 export const cartMachine = setup(cartMachineSchema).createMachine({
     id: 'cartMachine',
-    initial: 'loading',
+    initial: 'idle',
     context: () => ({
-        items: new Array<Item>(),
+        items: new Signal.State(Array<ItemSignal>()),
     }),
     states: {
-        loading: {
-            invoke: {
-                id: 'itemsService',
-                src: 'itemsService',
-                onDone: {
-                    target: 'idle',
-                    actions: 'setItems'
-                }
-            }
-        },
         idle: {
             on: {
-                UPDATE_ITEM: {
-                    actions: 'updateItem'
+                ADD_ITEM: {
+                    actions: 'addItem'
                 },
-                LOG_CONTEXT: {
-                    actions: 'logCurrentContext'
+                REMOVE_ITEM: {
+                    actions: 'removeItem'
+                },
+                RESET_CART: {
+                    actions: 'resetCart'
                 }
             }
         },
